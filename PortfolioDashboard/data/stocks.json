@@ -1,0 +1,90 @@
+{
+	"Portfolio":
+	{
+		"Stocks":
+		{
+			"CML":
+			{
+				"Growth": 
+				[
+					"BIGC",
+					"ESTC",
+					"FSLY",
+                    "FTCH",
+					"FIVN",
+					"JMIA",
+					"NVTA",
+					"OKTA",
+					"PD",
+					"PINS",
+					"PGNY",
+					"ROKU",
+					"SHOP",
+					"SMAR",
+					"TTD",
+					"TWLO",
+					"VEEV",
+					"WORK"
+				]
+			},
+
+			"Others": 
+			{
+				"BigCap": 
+				[
+					"AAPL",
+					"AMD",
+					"AMZN",
+					"BABA",
+					"FB",
+					"GOOGL",
+					"MSFT",
+					"NFLX",
+					"NVDA",
+					"TSLA"
+				],
+				"Growth": 
+				[
+					"APPS",
+					"CRWD",
+					"DDOG",
+					"DOCU",
+					"ETSY",
+                    "FVRR",
+                    "GRWG",
+					"MELI",
+					"NIO",
+					"PDD",
+					"PTON",
+					"SQ",
+					"SE",
+					"STNE",
+					"TEAM",
+					"ZM",
+					"ZS"
+				]
+			}
+		},
+		
+		"Valuation":
+		[
+			"Mkt Cap",
+			"Rev TTM",
+			"PS TTM",
+			"Rev Nxt",
+			"PS Nxt",
+			"Rev Growth",
+			"Upside"
+		],
+		
+		"Graph":
+		[
+			"Inc Qtr",	
+			"Inc TTM",
+			"Inc Growth",
+			"Rev Qtr",
+			"Rev TTM",
+			"Rev Growth"
+		]
+	}
+}

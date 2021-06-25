@@ -1,0 +1,447 @@
+import re
+import pandas as pd
+
+import requests
+from lxml import html as lhtml
+from fake_useragent import UserAgent
+
+import logging
+
+WS_TO_STR = 0
+WS_SRC = 1
+WS_PATH = 2
+WS_CACHE = 3
+
+class webparse:
+
+    websource = {
+        #              Readable         Source     unique path      caching
+        "mkt_cap"   : ['Mkt Cap'    , "ycharts", "market_cap",       0   ],
+        "inc_qtr"   : ['Inc Qtr'    , "ycharts", "net_income",       1   ],
+        "inc_ttm"   : ['Inc TTM'    , "ycharts", "net_income_ttm",   1   ],
+        "rev_qtr"   : ['Rev Qtr'    , "ycharts", "revenues",         1   ],
+        "rev_ttm"   : ['Rev TTM'    , "ycharts", "revenues_ttm",     1   ],
+        "p_rev_ttm" : ['Prv Rev TTM', "ycharts", "revenues_ttm",     1   ],
+        "ps_ttm"    : ['PS TTM'     , "NA"],
+        "ps_nxt"    : ['PS Nxt'     , "NA"],
+        "upside"    : ['Upside'     , "NA"],
+        "rev_growth": ['Rev Growth' , "NA"],
+        "inc_growth": ['Inc Growth' , "NA"],
+        "rev_nxt"   : ['Rev Nxt'    , "zacks",   "detailed-estimates", 0 ],
+        #"rev_nxt"   : ["yahoo",   "analysis",           0 ],
+        }
+
+    
+    # cache the entire http response
+    cached_web = {}
+
+    # handle to portfolio extracted data
+    pdata = {}
+    
+    # state to specify whether the latest date is the same
+    # if so, skip the parses
+    skip_metric_parse = 0
+    
+    # logger
+    def __init__(self):
+        self.logger = logging.getLogger('main.webparse')
+
+    
+    def clear_webcache(self):
+        self.cached_web = {}
+
+    def val_toB(self, istr):
+        # return value in billion
+        if istr == 'NA':
+            val = -1
+        elif istr[-1] == 'B':
+            val = float(istr[0:-1])
+        elif istr[-1] == 'T':
+            val = float(istr[0:-1])*1000.0
+        else:
+            val = float(istr[0:-1])/1000.0
+        return val
+
+    def val_toM(self, istr):
+        if istr == 'NA':
+            val = -1
+        elif istr[-1] == 'B':
+            val = float(istr[0:-1])*1000.0
+        else:
+            val = float(istr[0:-1])
+        return val
+
+    # Return the full xml, considering caching enabled or not
+    # if caching is enabled and is present, no need to query the website again
+    def get_xml(self, **kwargs):
+        s = kwargs['stock']
+        m = kwargs['metric']
+        u = kwargs['url']
+        
+        key = (s,self.websource[m][WS_PATH])
+        # check for caching enable
+        if self.websource[m][WS_CACHE]:
+            if key in self.cached_web.keys():
+                self.logger.debug('get cached url = %s' % u)
+                return self.cached_web[key]
+
+        # here, either caching is not enabled, or cache entry is not present
+        self.logger.info('get url = %s' % u)
+        ua = UserAgent()
+        hdr = {"User-Agent": ua.random}
+        req = requests.get(u, headers=hdr)    
+        root = lhtml.fromstring(req.content)
+        
+        # cache if enabled
+        if self.websource[m][WS_CACHE]:
+            self.cached_web[key] = root
+            
+        return root
+   
+    def check_skip_metric(self, **kwargs):
+        s = kwargs['stock']
+        m = kwargs['metric']
+        
+        if self.skip_metric_parse:
+            self.logger.debug('{0} - {1} - skipped'.format(s, m))
+            return 1, self.pdata[kwargs['stock']][self.websource[kwargs['metric']][WS_TO_STR]]
+        else:
+            return 0, 0
+
+    def check_gph_skip_metric(self, **kwargs):
+        s = kwargs['stock']
+        m = kwargs['metric']
+        
+        if self.skip_metric_parse:
+            self.logger.debug('{0} - {1} - skipped'.format(s, m))
+            return 1, self.pdata[kwargs['stock']][self.websource[kwargs['metric']][WS_TO_STR] + ' date'], \
+                      self.pdata[kwargs['stock']][self.websource[kwargs['metric']][WS_TO_STR]]
+        else:
+            return 0, 0, 0
+        
+    
+    def parse_ycharts_pgNameVal(self, **kwargs):
+        root = self.get_xml(**kwargs)
+        res = root.xpath("//span[@id='pgNameVal']")
+        stk = kwargs['stock']
+        metric = kwargs['metric']
+        
+        if len(res) != 1:
+            print("ERROR: stock %s, %s list not unique, or not available", 
+                  (kwargs['stock'], kwargs['metric']))
+            return -1
+        
+        res = res[0].text
+        [val, date] = res.split(" for ")
+        val = self.val_toB(val)
+        
+        try:
+            if date == self.pdata[stk]['latest']:
+                self.skip_metric_parse = 1
+                self.logger.info('%s latest data matches.. skipping metric parse' % stk)
+            
+            # if date is not the same and this is not market cap, that means this is new data.. 
+            # empty out the stocks data
+            elif metric != 'mkt_cap':
+                self.pdata[stk] = {'Mkt Cap' : self.pdata[stk]['Mkt Cap'], 'latest' : ''}
+                
+        except KeyError:
+            pass
+        
+        return val
+
+
+    def parse_mkt_cap(self, **kwargs):
+        self.skip_metric_parse = 0
+        retval = self.parse_ycharts_pgNameVal(**kwargs) 
+        return float("{0:.3f}".format(retval))
+
+    '''
+    def parse_rev_qtr(self, **kwargs):
+        if self.skip_metric_parse:
+            return self.pdata[kwargs['stock']][kwargs['metric']]
+
+        retval = self.parse_ycharts_pgNameVal(**kwargs) 
+        return float("{0:.3f}".format(retval))
+    '''
+    
+    def parse_rev_ttm(self, **kwargs):
+        skip, retval = self.check_skip_metric(**kwargs)
+        if skip:
+            return retval
+        
+        retval = self.parse_ycharts_pgNameVal(**kwargs) 
+        return float("{0:.3f}".format(retval))
+    
+    '''
+    def parse_inc_qtr(self, **kwargs):
+        if self.skip_metric_parse:
+            return self.pdata[kwargs['stock']][kwargs['metric']]
+
+        retval = self.parse_ycharts_pgNameVal(**kwargs) 
+        return float("{0:.3f}".format(retval))
+
+
+    def parse_inc_ttm(self, **kwargs):
+        if self.skip_metric_parse:
+            return self.pdata[kwargs['stock']][kwargs['metric']]
+            
+        retval = self.parse_ycharts_pgNameVal(**kwargs) 
+        return float("{0:.3f}".format(retval))
+    '''
+    
+    def parse_p_rev_ttm(self, **kwargs):
+        root = self.get_xml(**kwargs)
+        td = root.xpath("//td")
+        # prev ttm is located at TD[8] and TD[9]
+        # [0][1] is for current quarter
+        # [2][3] is for prev quarter
+        # [8][9] is for a year ago
+        try:
+            retval = td[9].text.strip()
+            # return value in billion
+            retval = self.val_toB(retval)
+        except IndexError:
+            retval = -1
+
+        return float("{0:.3f}".format(retval))
+    
+    
+    def parse_rev_nxt_zacks(self, root):
+        tb = root.xpath("//section[@id='detailed_earnings_estimates']")[0]
+        hdr = [th.text_content().split('(')[0].strip() for th in tb.xpath('.//th')]
+        row = [[td.text_content() for td in tr.xpath('.//td')] for tr in tb.xpath('.//tbody/tr')]
+        
+        # create indexes and proper row
+        hdr = hdr[1:]
+        idx = [r[0] for r in row]
+        row = [r[1:] for r in row]
+        
+        df = pd.DataFrame(data = row, columns = hdr, index = idx)
+        val = df['Next Year']['Zacks Consensus Estimate']
+        retval = self.val_toB(val)
+        
+        return float("{0:.3f}".format(retval))
+    
+    
+    def parse_rev_nxt(self, **kwargs):
+        skip, retval = self.check_skip_metric(**kwargs)
+        if skip:
+            return retval
+        
+        root = self.get_xml(**kwargs)
+        
+        if self.websource[kwargs['metric']][WS_SRC] == 'yahoo':
+            retval = self.parse_rev_nxt_yahoo(root)
+        elif self.websource[kwargs['metric']][WS_SRC] == 'zacks':
+            retval =self.parse_rev_nxt_zacks(root)
+        
+        return float("{0:.3f}".format(retval))
+    
+
+    '''
+    # parsing that requires ratio
+    # ps         = market_cap / rev_ttm
+    # ps_nxt     = market_cap / rev_nxt
+    # rev_growth = rev_ttm / p_rev_ttm
+    # upside     = rev_nxt / rev_ttm
+    '''
+    
+    # helper function to get ratio
+    def get_two_metrics(self, stk, a, b):
+        
+        if stk not in self.pdata.keys():
+            aval = self.parse(stk, a)
+            bval = self.parse(stk, b)
+        else:
+            try:
+                aval = self.pdata[stk][self.websource[a][WS_TO_STR]]
+            except KeyError:
+                aval = self.parse(stk, a)
+            try:
+                bval = self.pdata[stk][self.websource[b][WS_TO_STR]]
+            except KeyError:
+                bval = self.parse(stk, b)
+        return aval, bval
+    
+    
+    # PS TTM is basically mkt_cap/rev_ttm
+    # if the required data is not present, parse them first
+    def parse_ps_ttm(self, **kwargs):
+        skip, retval = self.check_skip_metric(**kwargs)
+        if skip:
+            return retval
+        
+        mkt_cap, rev_ttm = self.get_two_metrics(kwargs['stock'], 'mkt_cap', 'rev_ttm')
+        retval = mkt_cap / rev_ttm
+        return float("{0:.3f}".format(retval))    
+
+    # this is basically market_cap/rev_nxt
+    def parse_ps_nxt(self, **kwargs):
+        skip, retval = self.check_skip_metric(**kwargs)
+        if skip:
+            return retval
+        
+        mkt_cap, rev_nxt = self.get_two_metrics(kwargs['stock'], 'mkt_cap', 'rev_nxt')        
+        retval = mkt_cap / rev_nxt
+        return float("{0:.3f}".format(retval))
+    
+    # rev growth need the rev_ttm and prev year's rev_ttm
+    def parse_rev_growth(self, **kwargs):
+        skip, retval = self.check_skip_metric(**kwargs)
+        if skip:
+            return retval
+        
+        crev_ttm, prev_ttm = self.get_two_metrics(kwargs['stock'], 'rev_ttm', 'p_rev_ttm')      
+        retval = crev_ttm * 100.0 / prev_ttm - 100
+        return "{0:.0f}%".format(retval)
+    
+    # upside = rev_nxt / rev_ttm
+    def parse_upside(self, **kwargs):
+        skip, retval = self.check_skip_metric(**kwargs)
+        if skip:
+            return retval
+        
+        rev_nxt, rev_ttm = self.get_two_metrics(kwargs['stock'], 'rev_nxt', 'rev_ttm')
+        retval = rev_nxt * 100.0 / rev_ttm - 100
+        return "{0:.0f}%".format(retval)
+    
+    
+    '''
+    # parsing for graph, so parse the table entries
+    '''
+    def parse_ycharts_td(self, **kwargs):
+        root = self.get_xml(**kwargs)
+        td = root.xpath("//div[@id='dataTableBox']")[0].xpath('.//td')
+        tdlen = len(td)
+        
+        date, val = [], []
+        for i in range(0, tdlen, 2):
+            # if content is 0, skip
+            if td[i].text_content() == '': continue
+            if td[i+1].text_content().strip() == '': continue
+            date = [td[i].text_content()] + date
+            val  = [self.val_toM(td[i+1].text_content().strip())] + val
+        
+        return date, val
+   
+    def parse_gph_inc_qtr(self, **kwargs):
+        skip, date_ls, val_ls = self.check_gph_skip_metric(**kwargs)
+        if skip:
+            return date_ls, val_ls
+        date, val = self.parse_ycharts_td(**kwargs)
+        return date, val
+    
+    def parse_gph_inc_ttm(self, **kwargs):
+        skip, date_ls, val_ls = self.check_gph_skip_metric(**kwargs)
+        if skip:
+            return date_ls, val_ls
+        date, val = self.parse_ycharts_td(**kwargs)
+        return date, val
+    
+    def parse_gph_rev_qtr(self, **kwargs):
+        skip, date_ls, val_ls = self.check_gph_skip_metric(**kwargs)
+        if skip:
+            return date_ls, val_ls
+        date, val = self.parse_ycharts_td(**kwargs)
+        return date, val
+    
+    def parse_gph_rev_ttm(self, **kwargs):
+        skip, date_ls, val_ls = self.check_gph_skip_metric(**kwargs)
+        if skip:
+            return date_ls, val_ls
+        date, val = self.parse_ycharts_td(**kwargs)
+        return date, val
+
+    def parse_gph_metric(self, stk, m):
+        if stk not in self.pdata.keys():
+            date, val = self.parse(stk, m, fn_type="graph")
+        else:
+            try:
+                date = self.pdata[stk][self.websource[m][WS_TO_STR] + ' date']
+                val  = self.pdata[stk][self.websource[m][WS_TO_STR]]
+            except KeyError:
+                date, val = self.parse(stk, m, fn_type='graph')
+        return date, val
+
+    def parse_gph_growth(self, **kwargs):
+        metric = re.sub("growth", "ttm", kwargs['metric']).lower()
+        date, val = self.parse_gph_metric(kwargs['stock'], metric)
+        date = date[::-1]
+        val = val[::-1]
+        
+        # can't compute YoY growth if entry is less than 4 quarters
+        if len(val) < 4:
+            return [], []
+        
+        retval  = [float("{0:.2f}".format(val[i] / val[i+4] - 1)) for i in range(len(val)-4)][::-1]
+        retdate = [date[i] for i in range(len(date)-4)][::-1] 
+        return retdate, retval
+        
+
+    def parse_gph_inc_growth(self, **kwargs):
+        return [], []
+
+    def parse_gph_rev_growth(self, **kwargs):
+        return self.parse_gph_growth(**kwargs)
+
+    
+    
+    '''
+    parser main entry point and helper functions
+    '''
+   
+    # pre_parse takes in the metric and give the correct URL to go to
+    # input  : stock, metric
+    # output : stock, modified metric, proper URL
+    def pre_parse(self, stock, metric):
+        wp_metric = re.sub(" ", "_", metric).lower()
+        
+        try: 
+            mainurl = self.websource[wp_metric][WS_SRC]
+            if mainurl == 'ycharts':
+                url = "https://ycharts.com/companies/{}/{}".format(
+                    stock, self.websource[wp_metric][WS_PATH])
+            elif mainurl == "yahoo":
+                url = "https://www.finance.yahoo.com/quote/{}/{}".format(
+                    stock, self.websource[wp_metric][WS_PATH])
+            elif mainurl == "zacks":
+                url = "https://zacks.com/stock/quote/{}/{}".format(
+                    stock, self.websource[wp_metric][WS_PATH])
+            elif mainurl == 'NA':
+                url = "NA"
+            else:
+                url = None
+        except KeyError:
+            url = None
+        
+        return stock, wp_metric, url
+    
+    
+    def parse(self, stock, metric, **kwargs):
+        stock, metric, url = self.pre_parse(stock, metric)
+        
+        if url == None:
+            msg = """
+                ERROR: url returned None from pre_parse
+                stock: %s; metric: %s
+                """ % (stock, metric)
+            print(msg)
+            return -1
+        
+        try:
+            if kwargs['fn_type'] == 'graph':
+                fn_prefix = "parse_gph_"
+            else:
+                raise KeyError
+        except KeyError:
+            fn_prefix = "parse_"
+        
+        try:
+            func = getattr(self, fn_prefix + metric)
+        except AttributeError:
+            print("ERROR: no function: %s" % (fn_prefix + metric))
+            return -1
+        
+        return func(stock=stock, metric=metric, url=url)
+        

@@ -1,0 +1,17 @@
+.tbl-title {
+    height: 1px;
+    color: darkblue;
+    font-family: sans-serif;
+}
+
+button {
+	padding: 3px 3px;
+	margin: 2px 5px;
+}
+
+.status-msg {
+	color: darkblue;
+	font-family: sans-serif;
+	padding: 0px;
+	margin: 2px 0px;
+}
