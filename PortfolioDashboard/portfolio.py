@@ -182,7 +182,7 @@ class portfolio:
         self.open_db()
         
         self.cml_odata, self.cml_gdata = self.process_parse(self.cml_odata, self.cml_gdata, 
-                                                            upd_mkt, upd_val, 'CML', 'Growth')
+                                                            upd_mkt, upd_val, 'Top', 'Growth')
         self.grw_odata, self.grw_gdata = self.process_parse(self.grw_odata, self.grw_gdata, 
                                                             upd_mkt, upd_val, 'Others', 'Growth')
         self.big_odata, self.big_gdata = self.process_parse(self.big_odata, self.big_gdata, 
