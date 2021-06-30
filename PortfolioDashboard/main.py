@@ -15,56 +15,43 @@ in_app = 0
 app = dash.Dash(__name__)
 
 table_cond = [
-    # PS TTM
     {
-        'if': {'column_id': 'PS TTM',
-               'filter_query': '{PS TTM} > 30'},
+        'if': {'column_id': c,
+               'filter_query': '{' + c + '} > 30'},
         'color': 'Red', 'fontWeight': 'bold'
-    },
+    } for c in ['PS TTM', 'PS FY', 'PS 1FY', 'PS 2FY'] ] + [
     {
-        'if': {'column_id': 'PS TTM',
-                'filter_query': '{PS TTM} > 20 && {PS TTM} <= 30'},
+        'if': {'column_id': c,
+                'filter_query': '{' + c + '} > 20 && {' + c + '} <= 30'},
         'color': 'DarkOrange', 'fontWeight': 'bold'
-    },
+    } for c in ['PS TTM', 'PS FY', 'PS 1FY', 'PS 2FY'] ] + [
     {
-        'if': {'column_id': 'PS TTM',
-                'filter_query': '{PS TTM} < 15'},
+        'if': {'column_id': c,
+                'filter_query': '{' + c + '} < 15'},
         'color': 'LimeGreen', 'fontWeight': 'bold'
-    },
-    
-    # PS Nxt
+    } for c in ['PS TTM', 'PS FY', 'PS 1FY', 'PS 2FY'] 
+]
+
+
+
+style_cond = [
     {
-        'if': {'column_id': 'PS Nxt',
-               'filter_query': '{PS Nxt} > 30'},
-        'color': 'Red', 'fontWeight': 'bold'
-    },
+        'if': {'column_id': c},
+        'width': '9%',
+    } for c in ['Rev Grow', 'RevGw FY', 'RevGw 1FY', 'RevGw 2FY'] ] + [
     {
-        'if': {'column_id': 'PS Nxt',
-                'filter_query': '{PS Nxt} > 20 && {PS Nxt} <= 30'},
-        'color': 'DarkOrange', 'fontWeight': 'bold'
-    },
-    {
-        'if': {'column_id': 'PS Nxt',
-                'filter_query': '{PS Nxt} < 15'},
-        'color': 'LimeGreen', 'fontWeight': 'bold'
-    },
-    {
-        'if': {'column_id': 'Rev Growth'},
-        'width': '13%'
-    },
-    {
-        'if': {'column_id': 'Upside'},
-        'width': '10%'
-    },
+        'if': {'column_id': c},
+        'width': '9%',
+    } for c in ['PS TTM', 'PS FY', 'PS 1FY', 'PS 2FY']
 ]
 
 graph_loc = {
     'TL': 'Rev Qtr',
     'TM': 'Rev TTM',
-    'TR': 'Rev Growth',
+    'TR': 'Rev Grow',
     'BL': 'Inc Qtr',
     'BM': 'Inc TTM',
-    'BR': 'Inc Growth',
+    'BR': 'Inc Grow',
 }
 
 def create_fig(title, values = [], **kwargs):
@@ -102,8 +89,8 @@ def create_table(i_id, pd_tbl, **kwargs):
         },
         
         style_data_conditional = table_cond,
-        
-        cell_selectable = True, 
+        style_cell_conditional = style_cond,
+        cell_selectable = True,
     )
     return tbl 
 

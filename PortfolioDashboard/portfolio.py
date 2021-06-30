@@ -71,7 +71,13 @@ class portfolio:
         # PS and PS_NXT
         elif upd_mkt == 1:
             for stk in self.idata['Portfolio']['Stocks'][p0][p1]:
-                odata[stk]['Mkt Cap'], odata[stk]['PS TTM'], odata[stk]['PS Nxt'] = self.update_mkt_cap_dep(stk)
+                odata[stk]['Mkt Cap'], odata[stk]['PS TTM'] = self.update_mkt_cap_dep(stk)
+                
+                # we want to get the data for PS FY/1FY/2FY as well.. 
+                # but since the Rev FY are not stored, parse them too
+                for val in ['PS FY', 'PS 1FY', 'PS 2FY']:
+                    odata[stk][val] = self.wp.parse(stk, val)
+                    
             self.mdb_update_needed = 1
         
         # no update, just get from master db
@@ -107,9 +113,8 @@ class portfolio:
     
     def update_mkt_cap_dep(self, stk):
         mkt_cap = self.wp.parse(stk, 'Mkt Cap')
-        ps      = float("{0:.3f}".format(mkt_cap/self.mdb[stk]['Rev TTM']))
-        ps_nxt  = float("{0:.3f}".format(mkt_cap/self.mdb[stk]['Rev Nxt']))
-        return mkt_cap, ps, ps_nxt
+        ps_ttm  = float("{0:.3f}".format(mkt_cap/self.mdb[stk]['Rev TTM']))
+        return mkt_cap, ps_ttm
     
     
     def update_db(self, odict, idict):

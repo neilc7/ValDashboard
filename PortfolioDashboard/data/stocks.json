@@ -20,11 +20,10 @@
 					"PGNY",
 					"ROKU",
 					"SHOP",
-					"SMAR",
 					"TTD",
 					"TWLO",
-					"VEEV",
-					"WORK"
+					"U",
+					"VEEV"
 				]
 			},
 
@@ -46,20 +45,23 @@
 				"Growth": 
 				[
 					"APPS",
+					"CELH",
 					"CRWD",
 					"DDOG",
+					"DKNG",
 					"DOCU",
 					"ETSY",
+					"FUTU",
                     "FVRR",
                     "GRWG",
+                    "KC",
 					"MELI",
+					"MGNI",
 					"NIO",
-					"PDD",
 					"PTON",
 					"SQ",
 					"SE",
-					"STNE",
-					"TEAM",
+					"UPST",
 					"ZM",
 					"ZS"
 				]
@@ -71,20 +73,23 @@
 			"Mkt Cap",
 			"Rev TTM",
 			"PS TTM",
-			"Rev Nxt",
-			"PS Nxt",
-			"Rev Growth",
-			"Upside"
+			"PS FY",
+			"PS 1FY",
+			"PS 2FY",
+			"Rev Grow",
+			"RevGw FY",
+			"RevGw 1FY",
+			"RevGw 2FY"
 		],
 		
 		"Graph":
 		[
 			"Inc Qtr",	
 			"Inc TTM",
-			"Inc Growth",
+			"Inc Grow",
 			"Rev Qtr",
 			"Rev TTM",
-			"Rev Growth"
+			"Rev Grow"
 		]
 	}
 }

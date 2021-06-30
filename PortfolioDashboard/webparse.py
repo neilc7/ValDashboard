@@ -16,20 +16,33 @@ class webparse:
 
     websource = {
         #              Readable         Source     unique path      caching
-        "mkt_cap"   : ['Mkt Cap'    , "ycharts", "market_cap",       0   ],
-        "inc_qtr"   : ['Inc Qtr'    , "ycharts", "net_income",       1   ],
-        "inc_ttm"   : ['Inc TTM'    , "ycharts", "net_income_ttm",   1   ],
-        "rev_qtr"   : ['Rev Qtr'    , "ycharts", "revenues",         1   ],
-        "rev_ttm"   : ['Rev TTM'    , "ycharts", "revenues_ttm",     1   ],
-        "p_rev_ttm" : ['Prv Rev TTM', "ycharts", "revenues_ttm",     1   ],
+        "mkt_cap"   : ['Mkt Cap'    , "ycharts" , "market_cap",       0   ],
+        "inc_qtr"   : ['Inc Qtr'    , "ycharts" , "net_income",       1   ],
+        "inc_ttm"   : ['Inc TTM'    , "ycharts" , "net_income_ttm",   1   ],
+        "rev_qtr"   : ['Rev Qtr'    , "ycharts" , "revenues",         1   ],
+        "rev_ttm"   : ['Rev TTM'    , "ycharts" , "revenues_ttm",     1   ],
+        "p_rev_ttm" : ['Prv Rev TTM', "ycharts" , "revenues_ttm",     1   ],
+        
+        "rev_fy"    : ['Rev FY'     , "cml"     , "analysts",         1   ],
+        "ref_1fy"   : ['Rev 1FY'    , "cml"     , "analysts",         1   ],
+        "ref_2fy"   : ['Rev 2FY'    , "cml"     , "analysts",         1   ],
+       
+        # All PS depends on MktCap and Rev
+        "ps_fy"     : ['PS FY'      , "NA"],
+        "ps_1fy"    : ['PS 1FY'     , "NA"],
+        "ps_2fy"    : ['PS 2FY'     , "NA"],
         "ps_ttm"    : ['PS TTM'     , "NA"],
         "ps_nxt"    : ['PS Nxt'     , "NA"],
+
+        # upside and growth are just ratios between 2 numbers in different times
         "upside"    : ['Upside'     , "NA"],
-        "rev_growth": ['Rev Growth' , "NA"],
-        "inc_growth": ['Inc Growth' , "NA"],
-        "rev_nxt"   : ['Rev Nxt'    , "zacks",   "detailed-estimates", 0 ],
-        #"rev_nxt"   : ["yahoo",   "analysis",           0 ],
-        }
+        "rev_grow"  : ['Rev Grow'   , "NA"],
+        "inc_grow"  : ['Inc Grow'   , "NA"],
+        'revgw_fy'  : ['RevGw FY'   , 'NA'],
+        'revgw_1fy' : ['RevGw 1FY'  , 'NA'],
+        'revgw_2fy' : ['RevGw_2FY'  , 'NA'],
+        
+    }
 
     
     # cache the entire http response
@@ -41,6 +54,9 @@ class webparse:
     # state to specify whether the latest date is the same
     # if so, skip the parses
     skip_metric_parse = 0
+    
+    # fy_idx is for indexing the fiscal year calculation for revenue
+    fy_idx = 0
     
     # logger
     def __init__(self):
@@ -55,20 +71,20 @@ class webparse:
         if istr == 'NA':
             val = -1
         elif istr[-1] == 'B':
-            val = float(istr[0:-1])
+            val = float(istr[0:-1].replace(',', ''))
         elif istr[-1] == 'T':
-            val = float(istr[0:-1])*1000.0
-        else:
-            val = float(istr[0:-1])/1000.0
+            val = float(istr[0:-1].replace(',', ''))*1000.0
+        else: # observed value is in Mill
+            val = float(istr[0:-1].replace(',', ''))/1000.0
         return val
 
     def val_toM(self, istr):
         if istr == 'NA':
             val = -1
         elif istr[-1] == 'B':
-            val = float(istr[0:-1])*1000.0
+            val = float(istr[0:-1].replace(',', ''))*1000.0
         else:
-            val = float(istr[0:-1])
+            val = float(istr[0:-1].replace(',', ''))
         return val
 
     # Return the full xml, considering caching enabled or not
@@ -104,7 +120,7 @@ class webparse:
         
         if self.skip_metric_parse:
             self.logger.debug('{0} - {1} - skipped'.format(s, m))
-            return 1, self.pdata[kwargs['stock']][self.websource[kwargs['metric']][WS_TO_STR]]
+            return 1, self.pdata[s][self.websource[m][WS_TO_STR]]
         else:
             return 0, 0
 
@@ -114,8 +130,8 @@ class webparse:
         
         if self.skip_metric_parse:
             self.logger.debug('{0} - {1} - skipped'.format(s, m))
-            return 1, self.pdata[kwargs['stock']][self.websource[kwargs['metric']][WS_TO_STR] + ' date'], \
-                      self.pdata[kwargs['stock']][self.websource[kwargs['metric']][WS_TO_STR]]
+            return 1, self.pdata[s][self.websource[m][WS_TO_STR] + ' date'], \
+                      self.pdata[s][self.websource[m][WS_TO_STR]]
         else:
             return 0, 0, 0
         
@@ -153,17 +169,10 @@ class webparse:
 
     def parse_mkt_cap(self, **kwargs):
         self.skip_metric_parse = 0
+        self.fy_idx = 0
         retval = self.parse_ycharts_pgNameVal(**kwargs) 
         return float("{0:.3f}".format(retval))
-
-    '''
-    def parse_rev_qtr(self, **kwargs):
-        if self.skip_metric_parse:
-            return self.pdata[kwargs['stock']][kwargs['metric']]
-
-        retval = self.parse_ycharts_pgNameVal(**kwargs) 
-        return float("{0:.3f}".format(retval))
-    '''
+    
     
     def parse_rev_ttm(self, **kwargs):
         skip, retval = self.check_skip_metric(**kwargs)
@@ -237,7 +246,19 @@ class webparse:
             retval =self.parse_rev_nxt_zacks(root)
         
         return float("{0:.3f}".format(retval))
-    
+   
+    '''
+    parsing from CML
+    '''
+    def parse_rev_fy(self, **kwargs):
+        root = self.get_xml(**kwargs)
+        
+        # current FY = 7, next = 8, onward
+        xpath = "//table[@class='responsive']/tbody/tr[{}]/td[@class='mean']".format(self.fy_idx + 7)
+        res = root.xpath(xpath)[0].text
+        # returned value is in millions
+        return self.val_toB(res)
+
 
     '''
     # parsing that requires ratio
@@ -285,9 +306,9 @@ class webparse:
         mkt_cap, rev_nxt = self.get_two_metrics(kwargs['stock'], 'mkt_cap', 'rev_nxt')        
         retval = mkt_cap / rev_nxt
         return float("{0:.3f}".format(retval))
-    
+
     # rev growth need the rev_ttm and prev year's rev_ttm
-    def parse_rev_growth(self, **kwargs):
+    def parse_rev_grow(self, **kwargs):
         skip, retval = self.check_skip_metric(**kwargs)
         if skip:
             return retval
@@ -306,6 +327,36 @@ class webparse:
         retval = rev_nxt * 100.0 / rev_ttm - 100
         return "{0:.0f}%".format(retval)
     
+    
+    '''
+    Parse PS that depends on CML website
+    '''
+    # ps_fy = market_cap / rev_fy
+    # rev_fy is not part of the JSON valuation, so we'll always parse it again (from cached web)
+    def parse_ps_fy(self, **kwargs):
+        mkt_cap, rev_fy = self.get_two_metrics(kwargs['stock'], 'mkt_cap', 'rev_fy')
+        retval = mkt_cap / rev_fy
+        return float("{0:.2f}".format(retval))
+    
+    def parse_ps_1fy(self, **kwargs):
+        self.fy_idx = 1
+        return self.parse_ps_fy(**kwargs)
+    
+    def parse_ps_2fy(self, **kwargs):
+        self.fy_idx = 2
+        return self.parse_ps_fy(**kwargs)
+    
+    def parse_revgw_fy(self, **kwargs):
+        curr, nxt = self.get_two_metrics(kwargs['stock'], 'ps_ttm', 'ps_fy')
+        return '{0:.0f}%'.format((curr-nxt)*100.0 / nxt)
+    
+    def parse_revgw_1fy(self, **kwargs):
+        curr, nxt = self.get_two_metrics(kwargs['stock'], 'ps_fy', 'ps_1fy')
+        return '{0:.0f}%'.format((curr-nxt)*100.0 / nxt)
+    
+    def parse_revgw_2fy(self, **kwargs):
+        curr, nxt = self.get_two_metrics(kwargs['stock'], 'ps_1fy', 'ps_2fy')
+        return '{0:.0f}%'.format((curr-nxt)*100.0 / nxt)
     
     '''
     # parsing for graph, so parse the table entries
@@ -364,8 +415,8 @@ class webparse:
                 date, val = self.parse(stk, m, fn_type='graph')
         return date, val
 
-    def parse_gph_growth(self, **kwargs):
-        metric = re.sub("growth", "ttm", kwargs['metric']).lower()
+    def parse_gph_grow(self, **kwargs):
+        metric = re.sub("grow", "ttm", kwargs['metric']).lower()
         date, val = self.parse_gph_metric(kwargs['stock'], metric)
         date = date[::-1]
         val = val[::-1]
@@ -379,11 +430,11 @@ class webparse:
         return retdate, retval
         
 
-    def parse_gph_inc_growth(self, **kwargs):
+    def parse_gph_inc_grow(self, **kwargs):
         return [], []
 
-    def parse_gph_rev_growth(self, **kwargs):
-        return self.parse_gph_growth(**kwargs)
+    def parse_gph_rev_grow(self, **kwargs):
+        return self.parse_gph_grow(**kwargs)
 
     
     
@@ -407,6 +458,9 @@ class webparse:
                     stock, self.websource[wp_metric][WS_PATH])
             elif mainurl == "zacks":
                 url = "https://zacks.com/stock/quote/{}/{}".format(
+                    stock, self.websource[wp_metric][WS_PATH])
+            elif mainurl == 'cml':
+                url = 'https://www.cmlviz.com/inc/{1}.php?ticker={0}'.format(
                     stock, self.websource[wp_metric][WS_PATH])
             elif mainurl == 'NA':
                 url = "NA"
