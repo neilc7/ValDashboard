@@ -13,17 +13,17 @@
                     "FTCH",
 					"FIVN",
 					"JMIA",
+                    "NET",
 					"NVTA",
-					"OKTA",
 					"PD",
 					"PINS",
 					"PGNY",
 					"ROKU",
+					"SE",
 					"SHOP",
 					"TTD",
 					"TWLO",
-					"U",
-					"VEEV"
+					"U"
 				]
 			},
 
@@ -58,10 +58,12 @@
 					"MELI",
 					"MGNI",
 					"NIO",
+					"OKTA",
+					"ONDS",
 					"PTON",
 					"SQ",
-					"SE",
 					"UPST",
+					"VEEV",
 					"ZM",
 					"ZS"
 				]
