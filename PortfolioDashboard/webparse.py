@@ -213,7 +213,7 @@ class webparse:
         except IndexError:
             retval = -1
 
-        return float("{0:.3f}".format(retval))
+        return float("{0:.4f}".format(retval))
     
     
     def parse_rev_nxt_zacks(self, root):
