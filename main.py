@@ -7,9 +7,8 @@ import plotly.graph_objs as go
 
 from dash.dependencies import Input, Output, State
 
-import portfolio
+from src import portfolio, logger
 import json
-import logger
 
 in_app = 0
 app = dash.Dash(__name__)

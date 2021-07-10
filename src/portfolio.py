@@ -1,4 +1,4 @@
-import webparse
+from . import webparse
 import pandas as pd
 import json
 
