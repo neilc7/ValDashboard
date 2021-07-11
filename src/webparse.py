@@ -102,7 +102,7 @@ class webparse:
                 return self.cached_web[key]
 
         # here, either caching is not enabled, or cache entry is not present
-        self.logger.info('get url = %s' % u)
+        self.logger.debug('get url = %s' % u)
         ua = UserAgent()
         hdr = {"User-Agent": ua.random}
         req = requests.get(u, headers=hdr)    
@@ -154,7 +154,7 @@ class webparse:
         try:
             if date == self.pdata[stk]['latest']:
                 self.skip_metric_parse = 1
-                self.logger.info('%s latest data matches.. skipping metric parse' % stk)
+                self.logger.debug('%s latest data matches (%s).. skipping ycharts metric parse' % (stk, date))
             
             # if date is not the same and this is not market cap, that means this is new data.. 
             # empty out the stocks data

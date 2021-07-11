@@ -46,6 +46,7 @@ class portfolio:
                 
                 self.wp.pdata = odata
                 for val in self.val_ls:
+                    self.logger.info("get data for %s, %s" % (stk, val))
                     odata[stk][val] = self.wp.parse(stk, val)
                 
                 
@@ -70,7 +71,12 @@ class portfolio:
         # if only update market cap, also update dependencies:
         # PS and PS_NXT
         elif upd_mkt == 1:
+            odata, gdata = self.process_parse(odata, gdata, 0, 0, p0, p1)
+            self.wp.pdata = odata
+
             for stk in self.idata['Portfolio']['Stocks'][p0][p1]:
+                self.logger.info('\n====\nget mkt cap dependency for %s\n====' % stk)
+
                 odata[stk]['Mkt Cap'], odata[stk]['PS TTM'] = self.update_mkt_cap_dep(stk)
                 
                 # we want to get the data for PS FY/1FY/2FY as well.. 
