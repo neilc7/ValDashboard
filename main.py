@@ -12,6 +12,7 @@ import json
 
 in_app = 0
 app = dash.Dash(__name__)
+server = app.server
 
 table_cond = [
     {
@@ -151,8 +152,8 @@ def main():
     ]
     )
     
-    
-    app.run_server(debug=True)
+def run():
+    app.run_server(debug=True, port=8080)
 
 
 
@@ -290,6 +291,8 @@ def pick_tbl_entry(cml_cell, grw_cell, big_cell, cml_idx, grw_idx, big_idx):
     return (stk_name, cml_dict, grw_dict, big_dict, g_TL, g_TM, g_TR, g_BL, g_BM, g_BR)
 
 
+main()
+
 if __name__ == "__main__":
-    main()
+    run()
     
