@@ -9,6 +9,7 @@ lxml = "*"
 requests = "*"
 fake-useragent = "*"
 pandas = "*"
+gunicorn = "*"
 
 [dev-packages]
 

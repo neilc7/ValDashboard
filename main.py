@@ -21,12 +21,12 @@ table_cond = [
     } for c in ['PS TTM', 'PS FY', 'PS 1FY', 'PS 2FY'] ] + [
     {
         'if': {'column_id': c,
-                'filter_query': '{' + c + '} > 20 && {' + c + '} <= 30'},
+               'filter_query': '{' + c + '} > 20 && {' + c + '} <= 30'},
         'color': 'DarkOrange', 'fontWeight': 'bold'
     } for c in ['PS TTM', 'PS FY', 'PS 1FY', 'PS 2FY'] ] + [
     {
         'if': {'column_id': c,
-                'filter_query': '{' + c + '} < 15'},
+               'filter_query': '{' + c + '} < 15'},
         'color': 'LimeGreen', 'fontWeight': 'bold'
     } for c in ['PS TTM', 'PS FY', 'PS 1FY', 'PS 2FY'] 
 ]
