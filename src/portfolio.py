@@ -25,7 +25,7 @@ class portfolio:
     
     def __init__(self):
         self.wp = webparse.webparse()
-        self.logger = logging.getLogger('main.portfolio')
+        self.logger = logging.getLogger('root.' + __name__)
     
     
     def process_parse(self, odata, gdata, upd_mkt, upd_val, p0, p1):
@@ -42,7 +42,7 @@ class portfolio:
                 except KeyError:
                     odata[stk]['latest'] = ''
                 
-                self.logger.info('\n====\nget valuation data for %s\n====' % stk)
+                self.logger.info('get valuation data for %s' % stk)
                 
                 self.wp.pdata = odata
                 for val in self.val_ls:
@@ -50,7 +50,7 @@ class portfolio:
                     odata[stk][val] = self.wp.parse(stk, val)
                 
                 
-                self.logger.info('\n====\nget graph data for %s\n====' % stk)
+                self.logger.info('get graph data for %s' % stk)
                 
                 # grab latest date
                 try:
@@ -75,7 +75,7 @@ class portfolio:
             self.wp.pdata = odata
 
             for stk in self.idata['Portfolio']['Stocks'][p0][p1]:
-                self.logger.info('\n====\nget mkt cap dependency for %s\n====' % stk)
+                self.logger.info('get mkt cap dependency for %s' % stk)
 
                 odata[stk]['Mkt Cap'], odata[stk]['PS TTM'] = self.update_mkt_cap_dep(stk)
                 

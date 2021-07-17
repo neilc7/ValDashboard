@@ -60,7 +60,7 @@ class webparse:
     
     # logger
     def __init__(self):
-        self.logger = logging.getLogger('main.webparse')
+        self.logger = logging.getLogger('root.' + __name__)
 
     
     def clear_webcache(self):
@@ -358,10 +358,20 @@ class webparse:
         curr, nxt = self.get_two_metrics(kwargs['stock'], 'ps_1fy', 'ps_2fy')
         return '{0:.0f}%'.format((curr-nxt)*100.0 / nxt)
     
-    '''
-    # parsing for graph, so parse the table entries
-    '''
     def parse_ycharts_td(self, **kwargs):
+        """
+        Parse ycharts.com, indexing into the 'dataTableBox' id.
+        Each <tr> will have a pair of <td>: date and value.
+        Data from ycharts.com is most recent first, so new entry is prepended to the list
+        to create chronological order.
+
+        list[0] = oldest data
+        list[-1] = newest data
+
+        :param kwargs: Passed on to get_xml (contains stock, metric, url)
+        :return: date: list of dates (string)
+        :return: val: list of values converted to million
+        """
         root = self.get_xml(**kwargs)
         td = root.xpath("//div[@id='dataTableBox']")[0].xpath('.//td')
         tdlen = len(td)
@@ -405,6 +415,12 @@ class webparse:
         return date, val
 
     def parse_gph_metric(self, stk, m):
+        """
+        Parse graph metric
+        :param stk:
+        :param m:
+        :return:
+        """
         if stk not in self.pdata.keys():
             date, val = self.parse(stk, m, fn_type="graph")
         else:
@@ -418,15 +434,13 @@ class webparse:
     def parse_gph_grow(self, **kwargs):
         metric = re.sub("grow", "ttm", kwargs['metric']).lower()
         date, val = self.parse_gph_metric(kwargs['stock'], metric)
-        date = date[::-1]
-        val = val[::-1]
         
-        # can't compute YoY growth if entry is less than 4 quarters
-        if len(val) < 4:
+        # can't compute YoY growth if only 4 quarters or less
+        if len(val) <= 4:
             return [], []
         
-        retval  = [float("{0:.2f}".format(val[i] / val[i+4] - 1)) for i in range(len(val)-4)][::-1]
-        retdate = [date[i] for i in range(len(date)-4)][::-1] 
+        retval  = [float("{0:.2f}".format(val[i] / val[i-4] - 1)) for i in range(4, len(val))]
+        retdate = date[4:]
         return retdate, retval
         
 

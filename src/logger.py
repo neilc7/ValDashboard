@@ -1,12 +1,11 @@
 import logging
 
-logger = logging.getLogger('main')
-logger.setLevel(logging.DEBUG)
+def setup():
 
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler = logging.StreamHandler()
+    handler.setFormatter(formatter)
 
-formatter = logging.Formatter('%(name)s :: %(levelname)s :: %(message)s')
-ch.setFormatter(formatter)
-
-logger.addHandler(ch)
+    logger = logging.getLogger('root')
+    logger.setLevel(logging.DEBUG)
+    logger.addHandler(handler)

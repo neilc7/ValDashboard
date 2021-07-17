@@ -9,8 +9,8 @@ from dash.dependencies import Input, Output, State
 
 from src import portfolio, logger
 import json
+import logging
 
-in_app = 0
 app = dash.Dash(__name__)
 server = app.server
 
@@ -32,8 +32,6 @@ table_cond = [
     } for c in ['PS TTM', 'PS FY', 'PS 1FY', 'PS 2FY'] 
 ]
 
-
-
 style_cond = [
     {
         'if': {'column_id': c},
@@ -54,12 +52,13 @@ graph_loc = {
     'BR': 'Inc Grow',
 }
 
+
+
 def create_fig(title, values = [], **kwargs):
     fig = go.Figure(
         data = values,
         layout = go.Layout(
-            #autosize = True,
-            title = go.layout.Title(text=title),
+            title = go.layout.Title(text = title),
             title_x = 0.5,
             margin = dict(l=20, r=20, t=50, b=10),
         )
@@ -76,7 +75,7 @@ def create_fig(title, values = [], **kwargs):
 def create_table(i_id, pd_tbl, **kwargs):
     tbl = dash_table.DataTable(
         id = i_id,
-        columns = [{'name':i, 'id':i} for i in pd_tbl.columns],
+        columns = [{'name': i, 'id': i} for i in pd_tbl.columns],
         data = pd_tbl.to_dict('records'),
         fixed_rows = {'headers': True},
         sort_action = 'native',
@@ -102,7 +101,7 @@ def refresh():
     pf.process(upd_val=0, upd_mkt=0)
 
 
-def main():
+def build_app():
     global pf
     pf = portfolio.portfolio()
     
@@ -115,9 +114,7 @@ def main():
             html.Button('Update Mkt Cap', id='btn_upd_mkt'),
             html.Button('Update Valuation', id='btn_upd_val'),
             html.Button('Save to DB', id='btn_save_db'),
-        
-        
-        #html.Div(className='tables_r1c0', children = [
+
             html.Div(children = [
                 html.H4("Top Stocks", className='tbl-title'),
                 create_table(i_id='cml_table', pd_tbl=pf.cml_pd_tbl, height=300),
@@ -132,7 +129,6 @@ def main():
                 html.H4('Big Cap Stocks', className='tbl-title'),
                 create_table(i_id='big_table', pd_tbl=pf.big_pd_tbl, height=200),
             ]),
-        #]),
         ]),
 
         html.Div(className = 'status', children = [
@@ -151,10 +147,9 @@ def main():
         ]),
     ]
     )
-    
-def run():
-    app.run_server(debug=True, port=8080)
 
+def run_app():
+    app.run_server(debug=True, port=8080)
 
 
 def get_tables():
@@ -185,7 +180,6 @@ Button callbacks
      Input('btn_save_db', 'n_clicks')]
 )
 def update_top_button(btn_refresh, btn_upd_mkt, btn_upd_val, btn_save_db):
-    global in_app
     msg = 'Status Message'
     
     all_tbl = get_tables()
@@ -212,7 +206,6 @@ def update_top_button(btn_refresh, btn_upd_mkt, btn_upd_val, btn_save_db):
         pf.save_to_db(1, 1)
     
     return (msg, ) + all_tbl
-
 
 ''' 
 Table selection callback
@@ -264,7 +257,7 @@ def pick_tbl_entry(cml_cell, grw_cell, big_cell, cml_idx, grw_idx, big_idx):
             elif tbl == 'grw': stk_name = pd_tbl.loc[grw_idx[clicked_tbl['value'][0]['row']], 'Stk']
             elif tbl == 'big': stk_name = pd_tbl.loc[big_idx[clicked_tbl['value'][0]['row']], 'Stk']
             style_dict = table_cond + [{'if': {'row_index': clicked_tbl['value'][0]['row']},
-                           'background_color': 'MistyRose'}]
+                                        'background_color': 'MistyRose'}]
         except IndexError:
             stk_name = '...'
             style_dict = table_cond
@@ -291,8 +284,15 @@ def pick_tbl_entry(cml_cell, grw_cell, big_cell, cml_idx, grw_idx, big_idx):
     return (stk_name, cml_dict, grw_dict, big_dict, g_TL, g_TM, g_TR, g_BL, g_BM, g_BR)
 
 
-main()
+print('setting up logger')
+logger.setup()
+
+print('building dashboard')
+build_app()
+
+print('done setup')
 
 if __name__ == "__main__":
-    run()
-    
+    print('entering __main__')
+    run_app()
+
