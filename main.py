@@ -43,13 +43,19 @@ style_cond = [
     } for c in ['PS TTM', 'PS FY', 'PS 1FY', 'PS 2FY']
 ]
 
+"""
+Graph location: Top-Left, Top-Middle, etc
+dict {
+    key: [title, metric]
+}
+"""
 graph_loc = {
-    'TL': 'Rev Qtr',
-    'TM': 'Rev TTM',
-    'TR': 'Rev Grow',
-    'BL': 'Inc Qtr',
-    'BM': 'Inc TTM',
-    'BR': 'Inc Grow',
+    'TL': ['Rev Qtr (in $M)', 'Rev Qtr'],
+    'TM': ['Rev TTM (in $M)', 'Rev TTM'],
+    'TR': ['Rev Growth (%)', 'Rev Grow'],
+    'BL': ['Inc Qtr (in $M)', 'Inc Qtr'],
+    'BM': ['Inc TTM (in $M)', 'Inc TTM'],
+    'BR': ['Inc Growth (%)', 'Inc Grow'],
 }
 
 
@@ -138,12 +144,12 @@ def build_app():
         ]),
         
         html.Div(className = 'charts', children = [
-            dcc.Graph(id='graph_TL', figure = create_fig(graph_loc['TL'], [])),
-            dcc.Graph(id='graph_TM', figure = create_fig(graph_loc['TM'], [])),
-            dcc.Graph(id='graph_TR', figure = create_fig(graph_loc['TR'], [])),
-            dcc.Graph(id='graph_BL', figure = create_fig(graph_loc['BL'], [])),
-            dcc.Graph(id='graph_BM', figure = create_fig(graph_loc['BM'], [])),
-            dcc.Graph(id='graph_BR', figure = create_fig(graph_loc['BR'], [])),
+            dcc.Graph(id='graph_TL', figure = create_fig(graph_loc['TL'][0], [])),
+            dcc.Graph(id='graph_TM', figure = create_fig(graph_loc['TM'][0], [])),
+            dcc.Graph(id='graph_TR', figure = create_fig(graph_loc['TR'][0], [])),
+            dcc.Graph(id='graph_BL', figure = create_fig(graph_loc['BL'][0], [])),
+            dcc.Graph(id='graph_BM', figure = create_fig(graph_loc['BM'][0], [])),
+            dcc.Graph(id='graph_BR', figure = create_fig(graph_loc['BR'][0], [])),
         ]),
     ]
     )
@@ -159,8 +165,7 @@ def get_tables():
     grw_data = pf.grw_pd_tbl.to_dict('records')
     big_col  = [{'name':i, 'id':i} for i in pf.big_pd_tbl.columns]
     big_data = pf.big_pd_tbl.to_dict('records')
-    return (cml_col, cml_data, grw_col, grw_data, big_col, big_data)
-
+    return cml_col, cml_data, grw_col, grw_data, big_col, big_data
 
 
 ''' 
@@ -207,6 +212,7 @@ def update_top_button(btn_refresh, btn_upd_mkt, btn_upd_val, btn_save_db):
     
     return (msg, ) + all_tbl
 
+
 ''' 
 Table selection callback
 '''
@@ -235,12 +241,12 @@ def pick_tbl_entry(cml_cell, grw_cell, big_cell, cml_idx, grw_idx, big_idx):
     stk_name = '...'
     cml_dict, grw_dict, big_dict = table_cond, table_cond, table_cond
 
-    g_TL = create_fig(graph_loc['TL'], [])
-    g_TM = create_fig(graph_loc['TM'], [])
-    g_TR = create_fig(graph_loc['TR'], [])
-    g_BL = create_fig(graph_loc['BL'], [])
-    g_BM = create_fig(graph_loc['BM'], [])
-    g_BR = create_fig(graph_loc['BR'], [])
+    g_TL = create_fig(graph_loc['TL'][0], [])
+    g_TM = create_fig(graph_loc['TM'][0], [])
+    g_TR = create_fig(graph_loc['TR'][0], [])
+    g_BL = create_fig(graph_loc['BL'][0], [])
+    g_BM = create_fig(graph_loc['BM'][0], [])
+    g_BR = create_fig(graph_loc['BR'][0], [])
     
     if (cml_cell != None) or (grw_cell != None) or (big_cell != None):
         clicked_tbl = dash.callback_context.triggered[0]
@@ -271,17 +277,16 @@ def pick_tbl_entry(cml_cell, grw_cell, big_cell, cml_idx, grw_idx, big_idx):
         '''
         if stk_name != '...':
             gdata = getattr(pf, tbl + '_gdata')
-            g_ls = [0] * 6
-            s_ls = ['TL', 'TM', 'TR', 'BL', 'BM', 'BR']
+            g_ls = []
             
-            for g in range(len(g_ls)):
-                g_ls[g] = create_fig(graph_loc[s_ls[g]],
-                                     go.Bar(y = gdata[stk_name][graph_loc[s_ls[g]]],
-                                            x = gdata[stk_name][graph_loc[s_ls[g]]+' date']))
+            for g in ['TL', 'TM', 'TR', 'BL', 'BM', 'BR']:
+                g_ls = g_ls + [create_fig(graph_loc[g][0],
+                                     go.Bar(y = gdata[stk_name][graph_loc[g][1]],
+                                            x = gdata[stk_name][graph_loc[g][1]+' date']))]
             
             [g_TL, g_TM, g_TR, g_BL, g_BM, g_BR] = g_ls
         
-    return (stk_name, cml_dict, grw_dict, big_dict, g_TL, g_TM, g_TR, g_BL, g_BM, g_BR)
+    return stk_name, cml_dict, grw_dict, big_dict, g_TL, g_TM, g_TR, g_BL, g_BM, g_BR
 
 
 print('setting up logger')

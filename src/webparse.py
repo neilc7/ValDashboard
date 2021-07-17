@@ -439,7 +439,7 @@ class webparse:
         if len(val) <= 4:
             return [], []
         
-        retval  = [float("{0:.2f}".format(val[i] / val[i-4] - 1)) for i in range(4, len(val))]
+        retval  = [float("{0:.2f}".format(val[i] * 100.0 / val[i-4] - 100)) for i in range(4, len(val))]
         retdate = date[4:]
         return retdate, retval
         
