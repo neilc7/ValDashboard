@@ -17,7 +17,7 @@ class Status:
             self.logger.error('trying to update inprog to 1 when it is already inprog')
         else:
             self._update_inprog = val
-            self.logger.info('Setting update_inprog to %d' % val)
+            self.logger.debug('Setting update_inprog to %d' % val)
 
     @property
     def auto_update(self):
@@ -26,4 +26,4 @@ class Status:
     @auto_update.setter
     def auto_update(self, val):
         self._auto_update = val
-        self.logger.info('Setting auto update to %d' % val)
+        self.logger.debug('Setting auto update to %d' % val)
