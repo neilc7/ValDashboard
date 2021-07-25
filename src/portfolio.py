@@ -16,9 +16,9 @@ class Portfolio:
     mdb_update_needed = 0
     gph_update_needed = 0
     
-    cml_odata, grw_odata, big_odata = {}, {}, {}
-    cml_gdata, grw_gdata, big_gdata = {}, {}, {}
-    cml_pd_tbl, grw_pd_tbl, big_pd_tbl = '', '', ''
+    top_odata, grw_odata, big_odata = {}, {}, {}
+    top_gdata, grw_gdata, big_gdata = {}, {}, {}
+    top_pd_tbl, grw_pd_tbl, big_pd_tbl = '', '', ''
     
     def __init__(self):
         self.wp = WebParse()
@@ -135,12 +135,12 @@ class Portfolio:
                 odict[stk][v_key] = v_val
         return odict
     
-    def save_to_db(self, upd_mdb, upd_gph):
+    def save_to_db(self):
         """
         Append master and graph db with new or updated entries
         """
-        if upd_mdb:
-            for db in [self.cml_odata, self.grw_odata, self.big_odata]:
+        if self.mdb_update_needed:
+            for db in [self.top_odata, self.grw_odata, self.big_odata]:
                 self.mdb = self.update_db(self.mdb, db)
         
                 mfile = open('data/master_db.json', 'w')
@@ -148,10 +148,10 @@ class Portfolio:
                 mfile.close()
         
             self.mdb_update_needed = 0
-            print("INFO: Master DB Updated")
+            self.logger.info("INFO: Master DB Updated")
                 
-        if upd_gph:
-            for db in [self.cml_gdata, self.grw_gdata, self.big_gdata]:
+        if self.gph_update_needed:
+            for db in [self.top_gdata, self.grw_gdata, self.big_gdata]:
                 self.gph = self.update_db(self.gph, db)
                 
                 mfile = open('data/graph_db.json', 'w')
@@ -159,7 +159,7 @@ class Portfolio:
                 mfile.close()
         
             self.gph_update_needed = 0
-            print("INFO: Graph DB Updated")
+            self.logger.info("INFO: Graph DB Updated")
     
     def open_db(self):
         """
@@ -190,11 +190,9 @@ class Portfolio:
         for stk, vals in idict.items():
             newdict = {'Stk':stk}
             newdict.update(vals)
-            pd_tbl.append(newdict)
+            pd_tbl += [newdict]
         
         opd = pd.json_normalize(pd_tbl)
-        # then convert to dataframe with header = valuation and index = stock
-        #opd = opd.set_index('Stk')
         return opd
 
     def process(self, upd_val):
@@ -208,12 +206,21 @@ class Portfolio:
         
         self.open_db()
         
-        self.cml_odata, self.cml_gdata = self.process_parse(self.cml_odata, self.cml_gdata, upd_val, 'Top', 'Growth')
+        self.top_odata, self.top_gdata = self.process_parse(self.top_odata, self.top_gdata, upd_val, 'Top', 'Growth')
         self.grw_odata, self.grw_gdata = self.process_parse(self.grw_odata, self.grw_gdata, upd_val, 'Others', 'Growth')
         self.big_odata, self.big_gdata = self.process_parse(self.big_odata, self.big_gdata, upd_val, 'Others', 'BigCap')
         
-        self.save_to_db(self.mdb_update_needed, self.gph_update_needed)
+        self.save_to_db()
         
-        self.cml_pd_tbl = self.dict_to_pd(self.cml_odata)
+        self.top_pd_tbl = self.dict_to_pd(self.top_odata)
         self.grw_pd_tbl = self.dict_to_pd(self.grw_odata)
+        self.big_pd_tbl = self.dict_to_pd(self.big_odata)
+
+    def conv_top_tbl(self):
+        self.top_pd_tbl = self.dict_to_pd(self.top_odata)
+
+    def conv_grw_tbl(self):
+        self.grw_pd_tbl = self.dict_to_pd(self.grw_odata)
+
+    def conv_big_tbl(self):
         self.big_pd_tbl = self.dict_to_pd(self.big_odata)
