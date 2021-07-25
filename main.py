@@ -7,9 +7,8 @@ import plotly.graph_objs as go
 
 from dash.dependencies import Input, Output, State
 
-from src import portfolio, logger
+from src import portfolio, logger, bg_process, status
 import json
-import logging
 
 app = dash.Dash(__name__)
 server = app.server
@@ -104,22 +103,27 @@ def refresh():
     global pf
     jfile = open('data/stocks.json', 'r')
     pf.idata = json.load(jfile)
-    pf.process(upd_val=0, upd_mkt=0)
+    pf.process(upd_val=0)
 
 
 def build_app():
-    global pf
-    pf = portfolio.portfolio()
-    
+    global pf, bg, sts
+    pf = portfolio.Portfolio()
+    sts = status.Status()
+
+    bg = bg_process.BackgroundProcess()
+    bg.config(pf, sts)
+
     refresh()
   
     app.layout = html.Div(className='wrapper', children = [
 
         html.Div(className='tables', children = [
-            html.Button('Refresh', id='btn_refresh'),
-            html.Button('Update Mkt Cap', id='btn_upd_mkt'),
+            #html.Button('Refresh', id='btn_refresh'),
             html.Button('Update Valuation', id='btn_upd_val'),
-            html.Button('Save to DB', id='btn_save_db'),
+            #html.Button('Save to DB', id='btn_save_db'),
+            #html.Button('Start Auto Update', id='btn_start_auto'),
+            #html.Button('Stop Auto Update', id='btn_stop_auto'),
 
             html.Div(children = [
                 html.H4("Top Stocks", className='tbl-title'),
@@ -179,12 +183,16 @@ Button callbacks
     Output('grw_table', 'data'),
     Output('big_table', 'columns'),
     Output('big_table', 'data'),
-    [Input('btn_refresh', 'n_clicks'),
-     Input('btn_upd_mkt', 'n_clicks'),
-     Input('btn_upd_val', 'n_clicks'),
-     Input('btn_save_db', 'n_clicks')]
+    [
+        #Input('btn_refresh', 'n_clicks'),
+        Input('btn_upd_val', 'n_clicks'),
+        #Input('btn_save_db', 'n_clicks'),
+        #Input('btn_start_auto', 'n_clicks'),
+        #Input('btn_stop_auto', 'n_clicks')
+    ]
 )
-def update_top_button(btn_refresh, btn_upd_mkt, btn_upd_val, btn_save_db):
+#def update_top_button(btn_refresh, btn_upd_val, btn_save_db, btn_start_auto, btn_stop_auto):
+def update_top_button(btn_upd_val):
     msg = 'Status Message'
     
     all_tbl = get_tables()
@@ -197,18 +205,23 @@ def update_top_button(btn_refresh, btn_upd_mkt, btn_upd_val, btn_save_db):
         msg = "JSON reloaded"
     
     elif 'btn_upd_val' in changed_id:
-        pf.process(upd_val=1, upd_mkt=0)
+        sts.update_inprog = 1
+        pf.process(upd_val=1)
+        sts.update_inprog = 0
         msg = 'Valuations Updated'
-        all_tbl = get_tables()
-    
-    elif 'btn_upd_mkt' in changed_id:
-        pf.process(upd_val=0, upd_mkt=1)
-        msg = 'Market Cap Updated'
         all_tbl = get_tables()
     
     elif 'btn_save_db' in changed_id:
         msg = 'Saving to Master DB'
         pf.save_to_db(1, 1)
+
+    elif 'btn_start_auto' in changed_id:
+        msg = 'Starting auto update. Manual MktCap/Valuation update will be disabled'
+        sts.auto_update = 1
+
+    elif 'btn_stop_auto' in changed_id:
+        msg = 'Stopping auto update. Manual MktCap/Valuation update will work again'
+        sts.auto_update = 0
     
     return (msg, ) + all_tbl
 
@@ -281,8 +294,10 @@ def pick_tbl_entry(cml_cell, grw_cell, big_cell, cml_idx, grw_idx, big_idx):
             
             for g in ['TL', 'TM', 'TR', 'BL', 'BM', 'BR']:
                 g_ls = g_ls + [create_fig(graph_loc[g][0],
-                                     go.Bar(y = gdata[stk_name][graph_loc[g][1]],
-                                            x = gdata[stk_name][graph_loc[g][1]+' date']))]
+                                            [go.Bar(y = gdata[stk_name][graph_loc[g][1]],
+                                            x = gdata[stk_name][graph_loc[g][1]+' date'])]
+                                          )
+                               ]
             
             [g_TL, g_TM, g_TR, g_BL, g_BM, g_BR] = g_ls
         
