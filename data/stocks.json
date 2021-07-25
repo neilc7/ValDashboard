@@ -8,10 +8,10 @@
 				"Growth": 
 				[
 					"BIGC",
+					"CLFD",
 					"ESTC",
 					"FSLY",
                     "FTCH",
-					"FIVN",
 					"JMIA",
                     "NET",
 					"NVTA",
@@ -34,12 +34,12 @@
 					"AAPL",
 					"AMD",
 					"AMZN",
-					"BABA",
 					"FB",
 					"GOOGL",
 					"MSFT",
 					"NFLX",
 					"NVDA",
+					"SBUX",
 					"TSLA"
 				],
 				"Growth": 
@@ -54,16 +54,15 @@
 					"FUTU",
                     "FVRR",
                     "GRWG",
-                    "KC",
 					"MELI",
 					"MGNI",
 					"NIO",
 					"OKTA",
 					"ONDS",
 					"PTON",
+					"SNAP",
 					"SQ",
 					"UPST",
-					"VEEV",
 					"ZM",
 					"ZS"
 				]
