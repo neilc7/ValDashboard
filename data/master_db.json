@@ -586,5 +586,17 @@
         "RevGw FY": "38%",
         "RevGw 1FY": "37%",
         "RevGw 2FY": "23%"
+    },
+    "TDOC": {
+        "Mkt Cap": 23.66,
+        "Rev TTM": 1.629,
+        "PS TTM": 14.524,
+        "PS FY": 11.76,
+        "PS 1FY": 9.11,
+        "PS 2FY": 7.19,
+        "Rev Grow": "127%",
+        "RevGw FY": "24%",
+        "RevGw 1FY": "29%",
+        "RevGw 2FY": "27%"
     }
 }
