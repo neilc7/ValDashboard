@@ -12,20 +12,20 @@ WS_SRC = 1
 WS_PATH = 2
 WS_CACHE = 3
 
-class webparse:
+class WebParse:
 
     websource = {
         #              Readable         Source     unique path      caching
-        "mkt_cap"   : ['Mkt Cap'    , "ycharts" , "market_cap",       0   ],
-        "inc_qtr"   : ['Inc Qtr'    , "ycharts" , "net_income",       1   ],
-        "inc_ttm"   : ['Inc TTM'    , "ycharts" , "net_income_ttm",   1   ],
-        "rev_qtr"   : ['Rev Qtr'    , "ycharts" , "revenues",         1   ],
-        "rev_ttm"   : ['Rev TTM'    , "ycharts" , "revenues_ttm",     1   ],
-        "p_rev_ttm" : ['Prv Rev TTM', "ycharts" , "revenues_ttm",     1   ],
+        "mkt_cap"   : ['Mkt Cap'    , "ycharts" , "market_cap",       0],
+        "inc_qtr"   : ['Inc Qtr'    , "ycharts" , "net_income",       1],
+        "inc_ttm"   : ['Inc TTM'    , "ycharts" , "net_income_ttm",   1],
+        "rev_qtr"   : ['Rev Qtr'    , "ycharts" , "revenues",         1],
+        "rev_ttm"   : ['Rev TTM'    , "ycharts" , "revenues_ttm",     1],
+        "p_rev_ttm" : ['Prv Rev TTM', "ycharts" , "revenues_ttm",     1],
         
-        "rev_fy"    : ['Rev FY'     , "cml"     , "analysts",         1   ],
-        "ref_1fy"   : ['Rev 1FY'    , "cml"     , "analysts",         1   ],
-        "ref_2fy"   : ['Rev 2FY'    , "cml"     , "analysts",         1   ],
+        "rev_fy"    : ['Rev FY'     , "cml"     , "analysts",         1],
+        "ref_1fy"   : ['Rev 1FY'    , "cml"     , "analysts",         1],
+        "ref_2fy"   : ['Rev 2FY'    , "cml"     , "analysts",         1],
        
         # All PS depends on MktCap and Rev
         "ps_fy"     : ['PS FY'      , "NA"],
@@ -61,7 +61,6 @@ class webparse:
     # logger
     def __init__(self):
         self.logger = logging.getLogger('root.' + __name__)
-
     
     def clear_webcache(self):
         self.cached_web = {}
@@ -143,7 +142,7 @@ class webparse:
         metric = kwargs['metric']
         
         if len(res) != 1:
-            print("ERROR: stock %s, %s list not unique, or not available", 
+            self.logger.error("ERROR: stock %s, %s list not unique, or not available" %
                   (kwargs['stock'], kwargs['metric']))
             return -1
         

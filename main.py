@@ -4,12 +4,12 @@ import dash_html_components as html
 import dash_table
 
 import plotly.graph_objs as go
+import time
 
 from dash.dependencies import Input, Output, State
 
-from src import portfolio, logger
+from src import portfolio, logger, bg_process, status
 import json
-import logging
 
 app = dash.Dash(__name__)
 server = app.server
@@ -104,26 +104,31 @@ def refresh():
     global pf
     jfile = open('data/stocks.json', 'r')
     pf.idata = json.load(jfile)
-    pf.process(upd_val=0, upd_mkt=0)
+    pf.process(upd_val=0)
 
 
 def build_app():
-    global pf
-    pf = portfolio.portfolio()
-    
+    global pf, bg, sts
+    pf = portfolio.Portfolio()
+    sts = status.Status()
+
+    bg = bg_process.BackgroundProcess(1, 30)
+    bg.config(pf, sts)
+
     refresh()
   
     app.layout = html.Div(className='wrapper', children = [
 
         html.Div(className='tables', children = [
             html.Button('Refresh', id='btn_refresh'),
-            html.Button('Update Mkt Cap', id='btn_upd_mkt'),
             html.Button('Update Valuation', id='btn_upd_val'),
-            html.Button('Save to DB', id='btn_save_db'),
+            #html.Button('Save to DB', id='btn_save_db'),
+            #html.Button('Start Auto Update', id='btn_start_auto'),
+            #html.Button('Stop Auto Update', id='btn_stop_auto'),
 
             html.Div(children = [
                 html.H4("Top Stocks", className='tbl-title'),
-                create_table(i_id='cml_table', pd_tbl=pf.cml_pd_tbl, height=300),
+                create_table(i_id='top_table', pd_tbl=pf.top_pd_tbl, height=300),
             ]),
             
             html.Div(children = [
@@ -154,18 +159,20 @@ def build_app():
     ]
     )
 
+    bg.start()
+
 def run_app():
     app.run_server(debug=True, port=8080)
 
 
 def get_tables():
-    cml_col  = [{'name':i, 'id':i} for i in pf.cml_pd_tbl.columns]
-    cml_data = pf.cml_pd_tbl.to_dict('records')
+    top_col  = [{'name':i, 'id':i} for i in pf.top_pd_tbl.columns]
+    top_data = pf.top_pd_tbl.to_dict('records')
     grw_col  = [{'name':i, 'id':i} for i in pf.grw_pd_tbl.columns]
     grw_data = pf.grw_pd_tbl.to_dict('records')
     big_col  = [{'name':i, 'id':i} for i in pf.big_pd_tbl.columns]
     big_data = pf.big_pd_tbl.to_dict('records')
-    return cml_col, cml_data, grw_col, grw_data, big_col, big_data
+    return top_col, top_data, grw_col, grw_data, big_col, big_data
 
 
 ''' 
@@ -173,18 +180,22 @@ Button callbacks
 '''
 @app.callback(
     Output('update_msg', 'children'),
-    Output('cml_table', 'columns'),
-    Output('cml_table', 'data'),
+    Output('top_table', 'columns'),
+    Output('top_table', 'data'),
     Output('grw_table', 'columns'),
     Output('grw_table', 'data'),
     Output('big_table', 'columns'),
     Output('big_table', 'data'),
-    [Input('btn_refresh', 'n_clicks'),
-     Input('btn_upd_mkt', 'n_clicks'),
-     Input('btn_upd_val', 'n_clicks'),
-     Input('btn_save_db', 'n_clicks')]
+    [
+        Input('btn_refresh', 'n_clicks'),
+        Input('btn_upd_val', 'n_clicks'),
+        #Input('btn_save_db', 'n_clicks'),
+        #Input('btn_start_auto', 'n_clicks'),
+        #Input('btn_stop_auto', 'n_clicks')
+    ]
 )
-def update_top_button(btn_refresh, btn_upd_mkt, btn_upd_val, btn_save_db):
+#def update_top_button(btn_refresh, btn_upd_val, btn_save_db, btn_start_auto, btn_stop_auto):
+def update_top_button(btn_refresh, btn_upd_val):
     msg = 'Status Message'
     
     all_tbl = get_tables()
@@ -197,13 +208,14 @@ def update_top_button(btn_refresh, btn_upd_mkt, btn_upd_val, btn_save_db):
         msg = "JSON reloaded"
     
     elif 'btn_upd_val' in changed_id:
-        pf.process(upd_val=1, upd_mkt=0)
+        while sts.update_inprog:
+            time.sleep(0.1)
+
+        sts.update_inprog = 1
+        pf.process(upd_val=1)
+        sts.update_inprog = 0
+
         msg = 'Valuations Updated'
-        all_tbl = get_tables()
-    
-    elif 'btn_upd_mkt' in changed_id:
-        pf.process(upd_val=0, upd_mkt=1)
-        msg = 'Market Cap Updated'
         all_tbl = get_tables()
     
     elif 'btn_save_db' in changed_id:
@@ -218,7 +230,7 @@ Table selection callback
 '''
 @app.callback(
     Output('selected_stk', 'children'),
-    Output('cml_table', 'style_data_conditional'),
+    Output('top_table', 'style_data_conditional'),
     Output('grw_table', 'style_data_conditional'),
     Output('big_table', 'style_data_conditional'),
 
@@ -229,17 +241,17 @@ Table selection callback
     Output('graph_BM', 'figure'),
     Output('graph_BR', 'figure'),
     
-    [Input('cml_table', 'selected_cells'),
+    [Input('top_table', 'selected_cells'),
      Input('grw_table', 'selected_cells'),
      Input('big_table', 'selected_cells')],
     
-    [State('cml_table', 'derived_virtual_indices'),
+    [State('top_table', 'derived_virtual_indices'),
      State('grw_table', 'derived_virtual_indices'),
      State('big_table', 'derived_virtual_indices')]
 )
-def pick_tbl_entry(cml_cell, grw_cell, big_cell, cml_idx, grw_idx, big_idx):
+def pick_tbl_entry(top_cell, grw_cell, big_cell, top_idx, grw_idx, big_idx):
     stk_name = '...'
-    cml_dict, grw_dict, big_dict = table_cond, table_cond, table_cond
+    top_dict, grw_dict, big_dict = table_cond, table_cond, table_cond
 
     g_TL = create_fig(graph_loc['TL'][0], [])
     g_TM = create_fig(graph_loc['TM'][0], [])
@@ -248,18 +260,18 @@ def pick_tbl_entry(cml_cell, grw_cell, big_cell, cml_idx, grw_idx, big_idx):
     g_BM = create_fig(graph_loc['BM'][0], [])
     g_BR = create_fig(graph_loc['BR'][0], [])
     
-    if (cml_cell != None) or (grw_cell != None) or (big_cell != None):
+    if (top_cell is not None) or (grw_cell is not None) or (big_cell is not None):
         clicked_tbl = dash.callback_context.triggered[0]
         '''
         # clicked tbl will contain:
-        # [{'prop_id': 'cml_table.selected_cells', 
+        # [{'prop_id': 'top_table.selected_cells', 
         #   'value': [{'row': 3, 'column': 5, 'column_id': 'PS Nxt'}]}]
         '''
         tbl = clicked_tbl['prop_id'].split('.')[0].split('_')[0]
         pd_tbl = getattr(pf, tbl + '_pd_tbl')
         
         try:
-            if tbl == 'cml'  : stk_name = pd_tbl.loc[cml_idx[clicked_tbl['value'][0]['row']], 'Stk']
+            if tbl == 'top'  : stk_name = pd_tbl.loc[top_idx[clicked_tbl['value'][0]['row']], 'Stk']
             elif tbl == 'grw': stk_name = pd_tbl.loc[grw_idx[clicked_tbl['value'][0]['row']], 'Stk']
             elif tbl == 'big': stk_name = pd_tbl.loc[big_idx[clicked_tbl['value'][0]['row']], 'Stk']
             style_dict = table_cond + [{'if': {'row_index': clicked_tbl['value'][0]['row']},
@@ -268,7 +280,7 @@ def pick_tbl_entry(cml_cell, grw_cell, big_cell, cml_idx, grw_idx, big_idx):
             stk_name = '...'
             style_dict = table_cond
         
-        if tbl == 'cml'     : cml_dict = style_dict
+        if tbl == 'top'     : top_dict = style_dict
         elif tbl == 'grw'   : grw_dict = style_dict
         elif tbl == 'big'   : big_dict = style_dict
         
@@ -281,12 +293,14 @@ def pick_tbl_entry(cml_cell, grw_cell, big_cell, cml_idx, grw_idx, big_idx):
             
             for g in ['TL', 'TM', 'TR', 'BL', 'BM', 'BR']:
                 g_ls = g_ls + [create_fig(graph_loc[g][0],
-                                     go.Bar(y = gdata[stk_name][graph_loc[g][1]],
-                                            x = gdata[stk_name][graph_loc[g][1]+' date']))]
+                                            [go.Bar(y = gdata[stk_name][graph_loc[g][1]],
+                                            x = gdata[stk_name][graph_loc[g][1]+' date'])]
+                                          )
+                               ]
             
             [g_TL, g_TM, g_TR, g_BL, g_BM, g_BR] = g_ls
         
-    return stk_name, cml_dict, grw_dict, big_dict, g_TL, g_TM, g_TR, g_BL, g_BM, g_BR
+    return stk_name, top_dict, grw_dict, big_dict, g_TL, g_TM, g_TR, g_BL, g_BM, g_BR
 
 
 print('setting up logger')
