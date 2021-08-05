@@ -1,98 +1,98 @@
 {
-	"Portfolio":
-	{
-		"Stocks":
-		{
-			"Top":
-			{
-				"Growth": 
-				[
-					"BIGC",
-					"ESTC",
-					"FSLY",
+    "Portfolio":
+    {
+        "Stocks":
+        {
+            "Top":
+            {
+                "Growth": 
+                [
+                    "BIGC",
+                    "ESTC",
+                    "FSLY",
                     "FTCH",
-					"FIVN",
-					"JMIA",
+                    "FIVN",
+                    "JMIA",
                     "NET",
-					"NVTA",
-					"PD",
-					"PINS",
-					"PGNY",
-					"ROKU",
-					"SE",
-					"SHOP",
-					"TTD",
-					"TWLO",
-					"U"
-				]
-			},
+                    "NVTA",
+                    "PD",
+                    "PINS",
+                    "PGNY",
+                    "ROKU",
+                    "SE",
+                    "SHOP",
+                    "TTD",
+                    "TWLO",
+                    "U"
+                ]
+            },
 
-			"Others": 
-			{
-				"BigCap": 
-				[
-					"AAPL",
-					"AMD",
-					"AMZN",
-					"BABA",
-					"FB",
-					"GOOGL",
-					"MSFT",
-					"NFLX",
-					"NVDA",
-					"TSLA"
-				],
-				"Growth": 
-				[
-					"APPS",
-					"CELH",
-					"CRWD",
-					"DDOG",
-					"DKNG",
-					"DOCU",
-					"ETSY",
-					"FUTU",
+            "Others": 
+            {
+                "BigCap": 
+                [
+                    "AAPL",
+                    "AMD",
+                    "AMZN",
+                    "BABA",
+                    "FB",
+                    "GOOGL",
+                    "MSFT",
+                    "NFLX",
+                    "NVDA",
+                    "TSLA"
+                ],
+                "Growth": 
+                [
+                    "APPS",
+                    "CELH",
+                    "CRWD",
+                    "DDOG",
+                    "DKNG",
+                    "DOCU",
+                    "ETSY",
+                    "FUTU",
                     "FVRR",
                     "GRWG",
                     "KC",
-					"MELI",
-					"MGNI",
-					"NIO",
-					"OKTA",
-					"ONDS",
-					"PTON",
-					"SQ",
-					"TDOC",
-					"UPST",
-					"VEEV",
-					"ZM",
-					"ZS"
-				]
-			}
-		},
-		
-		"Valuation":
-		[
-			"Mkt Cap",
-			"Rev TTM",
-			"PS TTM",
-			"PS FY",
-			"PS 1FY",
-			"PS 2FY",
-			"Rev Grow",
-			"RevGw FY",
-			"RevGw 1FY",
-			"RevGw 2FY"
-		],
-		
-		"Graph":
-		[
-			"Inc Qtr",	
-			"Inc TTM",
-			"Inc Grow",
-			"Rev Qtr",
-			"Rev TTM",
-			"Rev Grow"
-		]
-	}
+                    "MELI",
+                    "MGNI",
+                    "NIO",
+                    "OKTA",
+                    "ONDS",
+                    "PTON",
+                    "SQ",
+                    "TDOC",
+                    "UPST",
+                    "VEEV",
+                    "ZM",
+                    "ZS"
+                ]
+            }
+        },
+        
+        "Valuation":
+        [
+            "Mkt Cap",
+            "Rev TTM",
+            "PS TTM",
+            "PS FY",
+            "PS 1FY",
+            "PS 2FY",
+            "Rev Grow",
+            "RevGw FY",
+            "RevGw 1FY",
+            "RevGw 2FY"
+        ],
+        
+        "Graph":
+        [
+            "Inc Qtr",  
+            "Inc TTM",
+            "Inc Grow",
+            "Rev Qtr",
+            "Rev TTM",
+            "Rev Grow"
+        ]
+    }
 }
