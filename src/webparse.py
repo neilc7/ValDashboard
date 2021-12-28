@@ -372,9 +372,8 @@ class WebParse:
         :return: val: list of values converted to million
         """
         root = self.get_xml(**kwargs)
-        td = root.xpath("//div[@id='dataTableBox']")[0].xpath('.//td')
+        td = root.xpath("//table[@class='table']")[0].xpath('.//td')
         tdlen = len(td)
-        
         date, val = [], []
         for i in range(0, tdlen, 2):
             # if content is 0, skip
