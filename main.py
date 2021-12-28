@@ -159,7 +159,7 @@ def build_app():
     ]
     )
 
-    bg.start()
+    #bg.start()
 
 def run_app():
     app.run_server(debug=True, port=8080)

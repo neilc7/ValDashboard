@@ -137,7 +137,7 @@ class WebParse:
     
     def parse_ycharts_pgNameVal(self, **kwargs):
         root = self.get_xml(**kwargs)
-        res = root.xpath("//span[@id='pgNameVal']")
+        res = root.xpath("//span[@class='page-name-date']")
         stk = kwargs['stock']
         metric = kwargs['metric']
         
